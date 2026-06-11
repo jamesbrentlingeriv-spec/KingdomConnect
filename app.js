@@ -159,6 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
             appId: "1:899397395332:web:886320f679a8b86c5333d1"
         };
         localStorage.setItem('kj_firebase_config', JSON.stringify(defaultConfig));
+        // Default to true so that records are synced across all devices automatically
         localStorage.setItem('kj_firebase_enabled', 'true');
     }
 
@@ -1250,6 +1251,28 @@ async function handleLoginSubmit() {
             docElements.loginForm.reset();
         } catch (error) {
             console.error("Firebase Auth login failed:", error);
+            
+            // --- FALLBACK TO AUTO-REGISTRATION OR LOCAL MODE IF FIREBASE AUTH FAILS ---
+            const isLocalValid = USERS[usernameInput] && USERS[usernameInput] === password;
+            if (isLocalValid) {
+                try {
+                    console.log("Attempting to auto-register local user in Firebase Auth:", email);
+                    const { createUserWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    docElements.loginForm.reset();
+                    return;
+                } catch (createError) {
+                    console.error("Auto-registration in Firebase failed:", createError);
+                    // Fallback to local storage mode if registration fails (e.g. offline)
+                    localStorage.setItem('kj_firebase_enabled', 'false');
+                    sessionStorage.setItem('kj_current_user', usernameInput);
+                    docElements.loginErrorMsg.style.display = 'none';
+                    docElements.loginForm.reset();
+                    fallbackToLocalStorage();
+                    return;
+                }
+            }
+            
             let userError = "Invalid username or password.";
             if (error.code === 'auth/network-request-failed') {
                 userError = "Network error. Please check your connection.";
