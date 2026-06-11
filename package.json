@@ -1,0 +1,8 @@
+{
+  "name": "kingdom-connect-db",
+  "version": "1.0.0",
+  "description": "Kingdom Connect Newcomer Connection Portal and Database",
+  "scripts": {
+    "dev": "node server.js"
+  }
+}

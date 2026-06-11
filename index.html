@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kingdom Connect - Newcomer Connection Portal</title>
+    
+    <!-- PWA Meta Tags & Icons -->
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="theme-color" content="#0B2545">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+    <!-- Tesseract OCR Library -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+    <!-- Background overlay of three crosses -->
+    <div class="background-overlay"></div>
+
+    <!-- Login Screen -->
+    <div class="login-container" id="login-container">
+        <div class="login-card">
+            <div class="church-logo logo-lg" style="overflow: hidden; background: transparent; border: none; box-shadow: none;">
+                <img src="android-chrome-192x192.png" alt="Kingdom Connect Logo" style="width: 100%; height: 100%; object-fit: contain;">
+            </div>
+            <h2>Kingdom Connect</h2>
+            <p class="login-subtitle">Newcomer Connection Portal. Please sign in.</p>
+            
+            <form id="login-form" class="responsive-form">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <div class="input-wrapper">
+                        <i class="fa-regular fa-user input-icon"></i>
+                        <input type="text" id="login-username" required placeholder="Enter username">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <input type="password" id="login-password" required placeholder="Enter password">
+                    </div>
+                </div>
+                
+                <div id="login-error-msg" class="error-banner" style="display: none;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Invalid username or password
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                </button>
+            </form>
+            
+            <div class="login-decor">
+                <i class="fa-solid fa-hands-praying icon-red"></i> Abounding in the work of the Lord
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="app-container" id="app-container" style="display: none;">
+        
+        <!-- Header Section -->
+        <header class="app-header">
+            <div class="header-branding">
+                <div class="church-logo">
+                    <i class="fa-solid fa-cross"></i>
+                </div>
+                <div>
+                    <h1>Kingdom Connect</h1>
+                    <p class="subtitle">Newcomer Connection Portal</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <span class="user-greeting" id="user-greeting-span">
+                    <i class="fa-solid fa-circle-user"></i> <span id="current-user-display">User</span>
+                </span>
+                <span id="db-status-badge" class="badge badge-demo">
+                    <i class="fa-solid fa-circle-nodes"></i> Local Demo Mode
+                </span>
+                <button id="settings-btn" class="btn btn-secondary" title="Configure Database Server">
+                    <i class="fa-solid fa-gear"></i> Settings
+                </button>
+                <button id="logout-btn" class="btn btn-primary btn-sm btn-logout" title="Sign Out">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Scripture Banner -->
+        <section class="scripture-banner">
+            <div class="scripture-content">
+                <i class="fa-solid fa-quote-left quote-icon"></i>
+                <p id="scripture-text">"Therefore, my beloved brothers, be steadfast, immovable, always abounding in the work of the Lord, knowing that in the Lord your labor is not in vain."</p>
+                <cite id="scripture-reference">1 Corinthians 15:58</cite>
+            </div>
+            <button id="next-scripture-btn" class="btn-icon" title="Next Scripture">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </section>
+
+        <!-- Main Workspace Grid -->
+        <main class="main-grid">
+            
+            <!-- Left Panel: Input & OCR Scanner -->
+            <section class="card-panel input-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-user-plus text-primary"></i> Add Newcomer</h2>
+                    <span class="panel-subtitle">Type in details or scan a connection card</span>
+                </div>
+                
+                <!-- Tab Selector for Entry Method -->
+                <div class="entry-tabs">
+                    <button class="entry-tab active" data-tab="manual-tab">
+                        <i class="fa-solid fa-keyboard"></i> Manual Entry
+                    </button>
+                    <button class="entry-tab" data-tab="scan-tab">
+                        <i class="fa-solid fa-camera"></i> Scan Card Photo
+                    </button>
+                </div>
+
+                <div class="entry-tab-content">
+                    <!-- Manual Entry Tab -->
+                    <div id="manual-tab" class="tab-pane active">
+                        <form id="newcomer-form" class="responsive-form">
+                            <input type="hidden" id="entry-id">
+                            
+                            <div class="form-group">
+                                <label for="full-name">Full Name <span class="required">*</span></label>
+                                <div class="input-wrapper">
+                                    <i class="fa-regular fa-user input-icon"></i>
+                                    <input type="text" id="full-name" required placeholder="e.g., John Doe">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="email-addr">Email Address</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-regular fa-envelope input-icon"></i>
+                                        <input type="email" id="email-addr" placeholder="name@example.com">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone-num">Phone Number</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-solid fa-phone input-icon"></i>
+                                        <input type="tel" id="phone-num" placeholder="(555) 000-0000">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="visit-date">Date of Visit</label>
+                                <div class="input-wrapper">
+                                    <i class="fa-regular fa-calendar input-icon"></i>
+                                    <input type="date" id="visit-date">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Next Steps / Interests</label>
+                                <div class="checkbox-grid">
+                                    <label class="checkbox-card">
+                                        <input type="checkbox" id="step-membership">
+                                        <span class="checkbox-custom"></span>
+                                        <span class="checkbox-label">
+                                            <i class="fa-solid fa-users-rectangle icon-blue"></i> Become a Member
+                                        </span>
+                                    </label>
+                                    <label class="checkbox-card">
+                                        <input type="checkbox" id="step-baptism">
+                                        <span class="checkbox-custom"></span>
+                                        <span class="checkbox-label">
+                                            <i class="fa-solid fa-droplet icon-blue"></i> Wants Baptism
+                                        </span>
+                                    </label>
+                                    <label class="checkbox-card">
+                                        <input type="checkbox" id="step-group">
+                                        <span class="checkbox-custom"></span>
+                                        <span class="checkbox-label">
+                                            <i class="fa-solid fa-people-group icon-blue"></i> Join Church Group
+                                        </span>
+                                    </label>
+                                    <label class="checkbox-card">
+                                        <input type="checkbox" id="step-prayer">
+                                        <span class="checkbox-custom"></span>
+                                        <span class="checkbox-label">
+                                            <i class="fa-solid fa-hands-praying icon-red"></i> Prayer Request
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="prayer-details-group" style="display: none;">
+                                <label for="prayer-request">Prayer Request Details</label>
+                                <div class="input-wrapper">
+                                    <textarea id="prayer-request" rows="3" placeholder="How can our ministry pray for this newcomer?"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="admin-notes">Administrative Notes</label>
+                                <div class="input-wrapper">
+                                    <textarea id="admin-notes" rows="2" placeholder="Additional details (e.g., family size, referred by...)"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" id="cancel-edit-btn" class="btn btn-secondary" style="display: none;">Cancel Edit</button>
+                                <button type="submit" id="submit-btn" class="btn btn-primary">
+                                    <i class="fa-solid fa-heart"></i> Save Newcomer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- OCR Scan Tab -->
+                    <div id="scan-tab" class="tab-pane">
+                        <div class="ocr-scanner-wrapper">
+                            <!-- Drag and drop zone -->
+                            <div class="drop-zone" id="scan-drop-zone">
+                                <i class="fa-solid fa-cloud-arrow-up cloud-icon"></i>
+                                <h3>Drag & Drop Card Photo</h3>
+                                <p>or click to browse from files (.png, .jpg, .jpeg)</p>
+                                <input type="file" id="card-file-input" accept="image/*" style="display: none;">
+                                
+                                <div class="ocr-card-help">
+                                    <span class="help-link" id="view-sample-card-btn">
+                                        <i class="fa-solid fa-circle-info"></i> View Sample Card format
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Image Preview & Scanning Overlay -->
+                            <div class="scan-preview-container" id="scan-preview-container" style="display: none;">
+                                <div class="preview-header">
+                                    <span>Uploaded Card Image</span>
+                                    <button class="btn-text text-danger" id="clear-scan-btn"><i class="fa-solid fa-trash"></i> Clear</button>
+                                </div>
+                                <div class="image-wrapper">
+                                    <img id="scan-image-preview" src="" alt="Connection card preview">
+                                    <div class="scanning-laser" id="scanning-laser" style="display: none;"></div>
+                                </div>
+                                
+                                <!-- Progress Indicator -->
+                                <div class="scan-progress-bar" id="scan-progress-container" style="display: none;">
+                                    <div class="progress-info">
+                                        <span id="scan-status-text">Starting OCR Engine...</span>
+                                        <span id="scan-percent">0%</span>
+                                    </div>
+                                    <div class="progress-track">
+                                        <div class="progress-fill" id="scan-progress-fill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Scan Results / Compare and Review Panel -->
+                            <div class="scan-results-panel" id="scan-results-panel" style="display: none;">
+                                <div class="results-header">
+                                    <h4><i class="fa-solid fa-circle-check text-success"></i> Scan Completed</h4>
+                                </div>
+                                <div class="extracted-content">
+                                    <label>Raw Extracted Text:</label>
+                                    <pre id="raw-extracted-text"></pre>
+                                </div>
+                                <div class="scan-actions">
+                                    <button id="autofill-btn" class="btn btn-primary btn-block">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> Autofill Form with Detections
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Right Panel: Database List & Stats -->
+            <section class="card-panel list-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-database text-primary"></i> Connection Records</h2>
+                    <span class="panel-subtitle">Search, filter, and track visitor next steps</span>
+                </div>
+
+                <!-- Stats Summary Dashboard -->
+                <div class="stats-dashboard">
+                    <div class="stat-card stat-total">
+                        <span class="stat-val" id="stat-total-val">0</span>
+                        <span class="stat-label">Total Visitors</span>
+                    </div>
+                    <div class="stat-card stat-baptism">
+                        <span class="stat-val" id="stat-baptism-val">0</span>
+                        <span class="stat-label">Baptism Requests</span>
+                    </div>
+                    <div class="stat-card stat-membership">
+                        <span class="stat-val" id="stat-membership-val">0</span>
+                        <span class="stat-label">New Members</span>
+                    </div>
+                    <div class="stat-card stat-groups">
+                        <span class="stat-val" id="stat-group-val">0</span>
+                        <span class="stat-label">Group Interests</span>
+                    </div>
+                    <div class="stat-card stat-prayers">
+                        <span class="stat-val" id="stat-prayer-val">0</span>
+                        <span class="stat-label">Prayer Requests</span>
+                    </div>
+                </div>
+
+                <!-- Database Controls -->
+                <div class="db-controls">
+                    <div class="search-box-wrapper">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Search by name, email, or phone...">
+                    </div>
+                    <button id="export-csv-btn" class="btn btn-secondary" title="Export current list to CSV file">
+                        <i class="fa-solid fa-file-export"></i> Export CSV
+                    </button>
+                </div>
+
+                <!-- Quick Filter Tabs -->
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">All</button>
+                    <button class="filter-tab" data-filter="membership">
+                        <i class="fa-solid fa-users-rectangle"></i> Membership
+                    </button>
+                    <button class="filter-tab" data-filter="baptism">
+                        <i class="fa-solid fa-droplet text-primary"></i> Baptism
+                    </button>
+                    <button class="filter-tab" data-filter="group">
+                        <i class="fa-solid fa-people-group"></i> Group Request
+                    </button>
+                    <button class="filter-tab" data-filter="prayer">
+                        <i class="fa-solid fa-hands-praying text-danger"></i> Prayers
+                    </button>
+                </div>
+
+                <!-- Database Entries Container -->
+                <div class="database-list-wrapper">
+                    <!-- Table Layout for Large Screens -->
+                    <table class="db-table" id="db-table-view">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Visit Date</th>
+                                <th>Contact Information</th>
+                                <th>Next Steps</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="database-rows">
+                            <!-- Rows dynamic load -->
+                        </tbody>
+                    </table>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="empty-state" style="display: none;">
+                        <i class="fa-solid fa-users-slash empty-icon"></i>
+                        <h3>No newcomer records found</h3>
+                        <p>Try clearing your search query, selecting another filter, or scanning a card.</p>
+                    </div>
+
+                    <!-- Loader -->
+                    <div class="spinner-wrapper" id="database-spinner" style="display: none;">
+                        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+                        <p>Syncing records from Firebase...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Firebase Settings Modal -->
+    <div class="modal-backdrop" id="settings-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-cloud-arrow-up text-primary"></i> Firebase Connection Settings</h3>
+                <button class="modal-close" id="close-settings-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-intro">
+                    Configure your Firebase project below to persist newcomer connection cards securely in the cloud. If you toggle <strong>Local Demo Mode</strong>, data will be stored only in your browser storage.
+                </p>
+
+                <div class="form-group flex-row align-center">
+                    <label class="switch-container">
+                        <input type="checkbox" id="toggle-firebase-db">
+                        <span class="switch-slider"></span>
+                    </label>
+                    <div class="switch-description">
+                        <strong>Enable Firebase Firestore Sync</strong>
+                        <p class="small-text">Toggles cloud storage. Disabling falls back to browser storage.</p>
+                    </div>
+                </div>
+
+                <hr class="modal-divider">
+
+                <form id="firebase-config-form">
+                    <div class="form-group">
+                        <label for="fb-apiKey">API Key</label>
+                        <input type="password" id="fb-apiKey" class="form-input" placeholder="AIzaSy...">
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-authDomain">Auth Domain</label>
+                        <input type="text" id="fb-authDomain" class="form-input" placeholder="project-id.firebaseapp.com">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fb-projectId">Project ID</label>
+                            <input type="text" id="fb-projectId" class="form-input" placeholder="project-id">
+                        </div>
+                        <div class="form-group">
+                            <label for="fb-storageBucket">Storage Bucket</label>
+                            <input type="text" id="fb-storageBucket" class="form-input" placeholder="project-id.appspot.com">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fb-messagingSenderId">Messaging Sender ID</label>
+                            <input type="text" id="fb-messagingSenderId" class="form-input" placeholder="1234567890">
+                        </div>
+                        <div class="form-group">
+                            <label for="fb-appId">App ID</label>
+                            <input type="text" id="fb-appId" class="form-input" placeholder="1:1234567:web:abcd...">
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" id="clear-config-btn" class="btn btn-secondary">
+                            <i class="fa-solid fa-trash-can"></i> Reset Config
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-floppy-disk"></i> Save & Connect
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sample Card Modal -->
+    <div class="modal-backdrop" id="sample-card-modal" style="display: none;">
+        <div class="modal-card sample-card-modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-regular fa-image text-primary"></i> Sample Connection Card</h3>
+                <button class="modal-close" id="close-sample-card-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Below is a standard connection card design for Kingdom Connect. To test the OCR scanner, you can take a screenshot or download the card template, and upload it in the <strong>Scan Card Photo</strong> tab.
+                </p>
+                
+                <!-- SVG Sample Card for user display & simple download -->
+                <div class="sample-card-display" id="sample-card-to-download">
+                    <svg viewBox="0 0 600 350" xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" style="border: 2px dashed #ccc; border-radius: 8px; font-family: 'Inter', sans-serif; background-color: #fff;">
+                        <!-- Card Border and Header -->
+                        <rect width="100%" height="100%" fill="#fff"/>
+                        <rect width="100%" height="70" fill="#0B2545"/>
+                        
+                        <!-- Church Brand -->
+                        <text x="30" y="45" font-family="'Playfair Display', serif" font-size="24" font-weight="bold" fill="#fff">Kingdom Connect</text>
+                        <text x="570" y="43" text-anchor="end" font-size="12" fill="#F8FAFC" font-weight="300">WELCOME CARD</text>
+                        <line x1="30" y1="53" x2="570" y2="53" stroke="#C92C3B" stroke-width="2"/>
+                        
+                        <!-- Fields Section -->
+                        <text x="30" y="105" font-size="12" font-weight="bold" fill="#777">NAME:</text>
+                        <text x="90" y="105" font-size="15" fill="#333">Sarah Jenkins</text>
+                        <line x1="85" y1="110" x2="570" y2="110" stroke="#ccc" stroke-dasharray="3,3"/>
+                        
+                        <text x="30" y="140" font-size="12" font-weight="bold" fill="#777">EMAIL:</text>
+                        <text x="90" y="140" font-size="14" fill="#333">sarah.jenkins@outlook.com</text>
+                        
+                        <text x="330" y="140" font-size="12" font-weight="bold" fill="#777">PHONE:</text>
+                        <text x="390" y="140" font-size="14" fill="#333">(415) 382-9901</text>
+                        <line x1="85" y1="145" x2="310" y2="145" stroke="#ccc" stroke-dasharray="3,3"/>
+                        <line x1="385" y1="145" x2="570" y2="145" stroke="#ccc" stroke-dasharray="3,3"/>
+                        
+                        <text x="30" y="175" font-size="12" font-weight="bold" fill="#777">DATE:</text>
+                        <text x="90" y="175" font-size="14" fill="#333">06/15/2026</text>
+                        <line x1="85" y1="180" x2="570" y2="180" stroke="#ccc" stroke-dasharray="3,3"/>
+                        
+                        <!-- Checkboxes Section -->
+                        <text x="30" y="215" font-size="12" font-weight="bold" fill="#0B2545">I WOULD LIKE TO:</text>
+                        
+                        <!-- Checkbox 1 -->
+                        <rect x="30" y="232" width="16" height="16" fill="none" stroke="#C92C3B" stroke-width="2" rx="3"/>
+                        <polyline points="33,240 37,244 43,235" fill="none" stroke="#C92C3B" stroke-width="2"/>
+                        <text x="55" y="245" font-size="13" font-weight="bold" fill="#333">Become a New Member</text>
+                        
+                        <!-- Checkbox 2 -->
+                        <rect x="320" y="232" width="16" height="16" fill="none" stroke="#C92C3B" stroke-width="2" rx="3"/>
+                        <polyline points="323,240 327,244 333,235" fill="none" stroke="#C92C3B" stroke-width="2"/>
+                        <text x="345" y="245" font-size="13" font-weight="bold" fill="#333">Get Baptised</text>
+                        
+                        <!-- Checkbox 3 -->
+                        <rect x="30" y="265" width="16" height="16" fill="none" stroke="#C92C3B" stroke-width="2" rx="3"/>
+                        <!-- Not checked -->
+                        <text x="55" y="278" font-size="13" fill="#555">Join a Church Group</text>
+                        
+                        <!-- Checkbox 4 -->
+                        <rect x="320" y="265" width="16" height="16" fill="none" stroke="#C92C3B" stroke-width="2" rx="3"/>
+                        <polyline points="323,273 327,277 333,268" fill="none" stroke="#C92C3B" stroke-width="2"/>
+                        <text x="345" y="278" font-size="13" font-weight="bold" fill="#333">Prayer Request</text>
+                        
+                        <!-- Notes/Prayer Request -->
+                        <text x="30" y="310" font-size="11" font-weight="bold" fill="#777">PRAYER REQUESTS / NOTES:</text>
+                        <text x="180" y="310" font-size="12" fill="#555" font-style="italic">Please pray for my mother's health and recovery.</text>
+                        <line x1="175" y1="314" x2="570" y2="314" stroke="#ccc" stroke-dasharray="3,3"/>
+                    </svg>
+                </div>
+                
+                <div class="modal-actions-centered">
+                    <button id="download-sample-btn" class="btn btn-primary">
+                        <i class="fa-solid fa-download"></i> Download Sample Card Image
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Script Integrations via Native ES Modules -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
