@@ -47,7 +47,8 @@ let firebaseUnsubscribe = null; // Firestore listener teardown
 const USERS = {
     "Riby": "chase",
     "Ron": "pastor",
-    "James": "admin"
+    "James": "admin",
+    "Chase": "riby"
 };
 
 // DOM Element Selectors
@@ -146,6 +147,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set default date to today
     docElements.visitDate.value = new Date().toISOString().split('T')[0];
     
+    // Pre-populate Firebase credentials if none exist in browser storage
+    const savedConfig = localStorage.getItem('kj_firebase_config');
+    if (!savedConfig) {
+        const defaultConfig = {
+            apiKey: "AIzaSyBMqmj7HprjVf4z6zXkS2aynWOPbjGh22w",
+            authDomain: "kingdom-connect-187ca.firebaseapp.com",
+            projectId: "kingdom-connect-187ca",
+            storageBucket: "kingdom-connect-187ca.firebasestorage.app",
+            messagingSenderId: "899397395332",
+            appId: "1:899397395332:web:886320f679a8b86c5333d1"
+        };
+        localStorage.setItem('kj_firebase_config', JSON.stringify(defaultConfig));
+        localStorage.setItem('kj_firebase_enabled', 'true');
+    }
+
     // Initialize Event Listeners
     initEventListeners();
     
