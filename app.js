@@ -147,17 +147,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set default date to today
     docElements.visitDate.value = new Date().toISOString().split('T')[0];
     
-    // Pre-populate Firebase credentials if none exist in browser storage
+    // Pre-populate Firebase credentials if none exist or if using the old project in browser storage
     const savedConfig = localStorage.getItem('kj_firebase_config');
-    if (!savedConfig) {
-        const defaultConfig = {
-            apiKey: "AIzaSyBMqmj7HprjVf4z6zXkS2aynWOPbjGh22w",
-            authDomain: "kingdom-connect-187ca.firebaseapp.com",
-            projectId: "kingdom-connect-187ca",
-            storageBucket: "kingdom-connect-187ca.firebasestorage.app",
-            messagingSenderId: "899397395332",
-            appId: "1:899397395332:web:886320f679a8b86c5333d1"
-        };
+    const defaultConfig = {
+        apiKey: "AIzaSyDGgXeux5qvrTPXTsSyMREHEgUM1P9deZQ",
+        authDomain: "gen-lang-client-0603032123.firebaseapp.com",
+        projectId: "gen-lang-client-0603032123",
+        storageBucket: "gen-lang-client-0603032123.firebasestorage.app",
+        messagingSenderId: "1069426498989",
+        appId: "1:1069426498989:web:5f80eb0c86e1f3bca81524"
+    };
+    
+    if (!savedConfig || (savedConfig && savedConfig.includes("kingdom-connect-187ca"))) {
         localStorage.setItem('kj_firebase_config', JSON.stringify(defaultConfig));
         // Default to true so that records are synced across all devices automatically
         localStorage.setItem('kj_firebase_enabled', 'true');
