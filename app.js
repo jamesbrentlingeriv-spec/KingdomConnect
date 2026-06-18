@@ -148,18 +148,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set default date to today
     docElements.visitDate.value = new Date().toISOString().split('T')[0];
     
-    // Pre-populate Firebase credentials if none exist in browser storage
+    // Pre-populate Firebase credentials if none exist or if using the old project in browser storage
     const savedConfig = localStorage.getItem('kj_firebase_config');
-    if (!savedConfig) {
-        const defaultConfig = {
-            apiKey: "AIzaSyBMqmj7HprjVf4z6zXkS2aynWOPbjGh22w",
-            authDomain: "kingdom-connect-187ca.firebaseapp.com",
-            projectId: "kingdom-connect-187ca",
-            storageBucket: "kingdom-connect-187ca.firebasestorage.app",
-            messagingSenderId: "899397395332",
-            appId: "1:899397395332:web:886320f679a8b86c5333d1"
-        };
+    const defaultConfig = {
+        apiKey: "AIzaSyDGgXeux5qvrTPXTsSyMREHEgUM1P9deZQ",
+        authDomain: "gen-lang-client-0603032123.firebaseapp.com",
+        projectId: "gen-lang-client-0603032123",
+        storageBucket: "gen-lang-client-0603032123.firebasestorage.app",
+        messagingSenderId: "1069426498989",
+        appId: "1:1069426498989:web:5f80eb0c86e1f3bca81524"
+    };
+    
+    if (!savedConfig || (savedConfig && savedConfig.includes("kingdom-connect-187ca"))) {
         localStorage.setItem('kj_firebase_config', JSON.stringify(defaultConfig));
+        // Default to true so that records are synced across all devices automatically
         localStorage.setItem('kj_firebase_enabled', 'true');
     }
 
@@ -408,10 +410,9 @@ async function initializeDatabaseConnection() {
         try {
             const config = JSON.parse(savedConfig);
             
-            // Dynamic import of Firebase modules
+            // Dynamic import of Firebase modules (no Auth modules needed)
             const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
             const { getFirestore } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-            const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
             
             // Prevent duplicate initialization error
             let app;
@@ -424,43 +425,15 @@ async function initializeDatabaseConnection() {
             }
             
             db = getFirestore(app);
-            auth = getAuth(app);
             isFirebase = true;
             
             // Update UI status badge
             docElements.statusBadge.className = "badge badge-active";
             docElements.statusBadge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Firebase Cloud Connected';
             
-            // Set up Auth state listener
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    // User is signed in
-                    docElements.loginContainer.style.display = 'none';
-                    docElements.appContainer.style.display = 'flex';
-                    
-                    // Display username or email
-                    let displayName = user.email;
-                    if (user.email.endsWith('@kingdomconnect.org')) {
-                        const prefix = user.email.split('@')[0];
-                        displayName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
-                    }
-                    docElements.currentUserDisplay.textContent = displayName;
-                    
-                    // Set up Firestore sync
-                    setupFirestoreSync();
-                } else {
-                    // User is signed out: show login screen
-                    docElements.appContainer.style.display = 'none';
-                    docElements.loginContainer.style.display = 'flex';
-                    
-                    // Stop Firestore listener
-                    if (firebaseUnsubscribe) {
-                        firebaseUnsubscribe();
-                        firebaseUnsubscribe = null;
-                    }
-                }
-                showDatabaseSpinner(false);
-            });
+            // Set up Firestore sync
+            setupFirestoreSync();
+            showDatabaseSpinner(false);
             
         } catch (error) {
             console.error("Firebase CDN loading or setup error:", error);
@@ -1220,12 +1193,23 @@ function checkSessionAuth() {
     const isFirebaseEnabledSetting = localStorage.getItem('kj_firebase_enabled') === 'true';
     const savedConfig = localStorage.getItem('kj_firebase_config');
     
-    if (isFirebaseEnabledSetting && savedConfig) {
-        // Firebase Auth will run asynchronously and fire the state listener
-        initializeDatabaseConnection();
+    // Check local session
+    const currentUser = sessionStorage.getItem('kj_current_user');
+    if (currentUser && USERS[currentUser]) {
+        // User is logged in locally! Show the main app container.
+        docElements.loginContainer.style.display = 'none';
+        docElements.appContainer.style.display = 'flex';
+        docElements.currentUserDisplay.textContent = currentUser;
+        
+        if (isFirebaseEnabledSetting && savedConfig) {
+            initializeDatabaseConnection();
+        } else {
+            fallbackToLocalStorage();
+        }
     } else {
-        // Run Local Demo Mode checks
-        fallbackToLocalStorage();
+        // Not logged in: show login screen
+        docElements.loginContainer.style.display = 'flex';
+        docElements.appContainer.style.display = 'none';
     }
 }
 
@@ -1233,70 +1217,45 @@ async function handleLoginSubmit() {
     const usernameInput = docElements.loginUsername.value.trim();
     const password = docElements.loginPassword.value;
     
-    const isFirebaseEnabledSetting = localStorage.getItem('kj_firebase_enabled') === 'true';
-    const savedConfig = localStorage.getItem('kj_firebase_config');
-
-    if (isFirebaseEnabledSetting && savedConfig && isFirebase && auth) {
-        // --- FIREBASE AUTHENTICATION ---
-        showDatabaseSpinner(true);
+    // --- LOCAL AUTHENTICATION ---
+    if (USERS[usernameInput] && USERS[usernameInput] === password) {
+        sessionStorage.setItem('kj_current_user', usernameInput);
         docElements.loginErrorMsg.style.display = 'none';
+        docElements.loginForm.reset();
         
-        // Map short names to standard emails
-        let email = usernameInput;
-        if (!usernameInput.includes('@')) {
-            email = `${usernameInput.toLowerCase()}@kingdomconnect.org`;
-        }
+        // Transition to main dashboard
+        docElements.loginContainer.style.display = 'none';
+        docElements.appContainer.style.display = 'flex';
+        docElements.currentUserDisplay.textContent = usernameInput;
         
-        try {
-            const { signInWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
-            await signInWithEmailAndPassword(auth, email, password);
-            // Sign-in listener (onAuthStateChanged) will automatically transition UI
-            docElements.loginForm.reset();
-        } catch (error) {
-            console.error("Firebase Auth login failed:", error);
-            let userError = "Invalid username or password.";
-            if (error.code === 'auth/network-request-failed') {
-                userError = "Network error. Please check your connection.";
-            }
-            docElements.loginErrorMsg.textContent = userError;
-            docElements.loginErrorMsg.style.display = 'flex';
-            docElements.loginPassword.value = '';
-            docElements.loginPassword.focus();
-        } finally {
-            showDatabaseSpinner(false);
+        // Load database configuration
+        const isFirebaseEnabledSetting = localStorage.getItem('kj_firebase_enabled') === 'true';
+        const savedConfig = localStorage.getItem('kj_firebase_config');
+        if (isFirebaseEnabledSetting && savedConfig) {
+            initializeDatabaseConnection();
+        } else {
+            fallbackToLocalStorage();
         }
     } else {
-        // --- LOCAL AUTHENTICATION ---
-        if (USERS[usernameInput] && USERS[usernameInput] === password) {
-            sessionStorage.setItem('kj_current_user', usernameInput);
-            docElements.loginErrorMsg.style.display = 'none';
-            docElements.loginForm.reset();
-            fallbackToLocalStorage(); // This transitions UI and loads local cache
-        } else {
-            docElements.loginErrorMsg.textContent = "Invalid username or password.";
-            docElements.loginErrorMsg.style.display = 'flex';
-            docElements.loginPassword.value = '';
-            docElements.loginPassword.focus();
-        }
+        docElements.loginErrorMsg.textContent = "Invalid username or password.";
+        docElements.loginErrorMsg.style.display = 'flex';
+        docElements.loginPassword.value = '';
+        docElements.loginPassword.focus();
     }
 }
 
 async function handleLogout() {
     if (confirm("Are you sure you want to sign out?")) {
-        const isFirebaseEnabledSetting = localStorage.getItem('kj_firebase_enabled') === 'true';
+        sessionStorage.removeItem('kj_current_user');
         
-        if (isFirebaseEnabledSetting && auth) {
-            try {
-                const { signOut } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
-                await signOut(auth);
-            } catch (err) {
-                console.error("Firebase signOut failed:", err);
-                sessionStorage.removeItem('kj_current_user');
-                fallbackToLocalStorage();
-            }
-        } else {
-            sessionStorage.removeItem('kj_current_user');
-            fallbackToLocalStorage();
+        // Transition UI to login
+        docElements.appContainer.style.display = 'none';
+        docElements.loginContainer.style.display = 'flex';
+        
+        // Stop Firestore listener
+        if (firebaseUnsubscribe) {
+            firebaseUnsubscribe();
+            firebaseUnsubscribe = null;
         }
     }
 }
