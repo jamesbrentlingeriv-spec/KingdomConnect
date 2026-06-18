@@ -45,10 +45,10 @@ let firebaseUnsubscribe = null; // Firestore listener teardown
 
 // User Credentials Mapping
 const USERS = {
-    "Riby": "chase",
+    "Riby": "chase123",
     "Ron": "pastor",
-    "James": "admin",
-    "Chase": "riby"
+    "James": "admin123",
+    "Chase": "riby 123"
 };
 
 // DOM Element Selectors
@@ -62,6 +62,7 @@ const docElements = {
     appContainer: document.getElementById('app-container'),
     currentUserDisplay: document.getElementById('current-user-display'),
     logoutBtn: document.getElementById('logout-btn'),
+    loginSettingsBtn: document.getElementById('login-settings-btn'),
 
     // Badges & Buttons
     statusBadge: document.getElementById('db-status-badge'),
@@ -191,6 +192,9 @@ function initEventListeners() {
 
     // Logout Button
     docElements.logoutBtn.addEventListener('click', handleLogout);
+
+    // Login Settings Button
+    docElements.loginSettingsBtn.addEventListener('click', () => openModal(docElements.settingsModal));
     // Scripture click
     docElements.nextScriptureBtn.addEventListener('click', () => {
         activeScriptureIndex = (activeScriptureIndex + 1) % SCRIPTURES.length;
